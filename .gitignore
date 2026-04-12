@@ -1,0 +1,30 @@
+node_modules/
+dist/
+.DS_Store
+*.pyc
+__pycache__/
+.env
+.env.local
+
+# Data (large, local-only)
+data/frames/
+data/sessions.db
+data/gamification.db
+data/models/
+
+# Python
+python/.venv/
+python/venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Electron build outputs
+electron/dist/
+electron/out/
+electron/.vite/
+
+# PyInstaller
+python/dist/
+python/build/
+python/*.spec

@@ -1,0 +1,43 @@
+appId: com.gamergamer.app
+productName: Gamergamer
+copyright: Copyright © 2026 Gamergamer
+
+directories:
+  output: dist/installers
+
+files:
+  - dist/**/*
+  - package.json
+  - "!dist/installers/**"
+
+extraResources:
+  # Python service bundled as PyInstaller onedir build
+  - from: ../python-dist/gamergamer-service
+    to: python-service
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - nsis
+    - portable
+  icon: assets/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+
+mac:
+  target:
+    - dmg
+  icon: assets/icon.icns
+
+linux:
+  target:
+    - AppImage
+  icon: assets/icon.png
+
+publish:
+  provider: github
+  releaseType: release
