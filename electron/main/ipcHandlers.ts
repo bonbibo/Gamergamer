@@ -27,12 +27,32 @@ async function apiGet(endpoint: string) {
   return res.json();
 }
 
+async function apiPut(endpoint: string, body: unknown) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
 export function registerIpcHandlers(): void {
   // ── Session ────────────────────────────────────────────────────────────────
   ipcMain.handle('session:start', (_e, body) => apiPost('/session/start', body));
   ipcMain.handle('session:stop', (_e, body) => apiPost('/session/stop', body));
   ipcMain.handle('session:stats', (_e, sessionId) => apiGet(`/session/${sessionId}/stats`));
   ipcMain.handle('session:event', (_e, body) => apiPost('/session/event', body));
+
+  // ── User / Membership ─────────────────────────────────────────────────────
+  ipcMain.handle('user:register', (_e, body) => apiPost('/user/register', body));
+  ipcMain.handle('user:profile', (_e, userId) => apiGet(`/user/profile?user_id=${userId}`));
+  ipcMain.handle('user:updateProfile', (_e, body) => apiPut('/user/profile', body));
+  ipcMain.handle('user:settings', (_e, userId) => apiGet(`/user/settings?user_id=${userId}`));
+  ipcMain.handle('user:updateSettings', (_e, body) => apiPut('/user/settings', body));
 
   // ── Gamification ───────────────────────────────────────────────────────────
   ipcMain.handle('gamification:profile', (_e, userId) => apiGet(`/gamification/profile?user_id=${userId}`));

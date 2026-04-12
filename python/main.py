@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from python.db.database import init_databases
 from python.gamification.challenge_engine import seed_challenges
-from python.routers import gamification, marketplace, session, training
+from python.routers import gamification, marketplace, session, training, user
 from python.ws.broadcaster import broadcaster
 
 logging.basicConfig(
@@ -45,6 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(user.router)
 app.include_router(session.router)
 app.include_router(gamification.router)
 app.include_router(training.router)

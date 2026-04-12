@@ -7,6 +7,12 @@ contextBridge.exposeInMainWorld('api', {
   sessionStats: (sessionId: string) => ipcRenderer.invoke('session:stats', sessionId),
   sessionEvent: (body: unknown) => ipcRenderer.invoke('session:event', body),
 
+  // User / Membership
+  userRegister: (body: unknown) => ipcRenderer.invoke('user:register', body),
+  userProfile: (userId: string) => ipcRenderer.invoke('user:profile', userId),
+  userUpdateProfile: (body: unknown) => ipcRenderer.invoke('user:updateProfile', body),
+  userUpdateSettings: (body: unknown) => ipcRenderer.invoke('user:updateSettings', body),
+
   // Gamification
   getProfile: (userId: string) => ipcRenderer.invoke('gamification:profile', userId),
   getChallenges: (userId: string) => ipcRenderer.invoke('gamification:challenges', userId),

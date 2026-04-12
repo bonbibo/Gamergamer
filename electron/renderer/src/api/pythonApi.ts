@@ -4,6 +4,12 @@
 declare global {
   interface Window {
     api: {
+      // User / Membership
+      userRegister: (body: { user_id: string; username: string }) => Promise<{ ok: boolean }>;
+      userProfile: (userId: string) => Promise<UserFullProfile>;
+      userUpdateProfile: (body: { user_id: string; username: string }) => Promise<{ ok: boolean }>;
+      userUpdateSettings: (body: UserSettingsUpdate) => Promise<{ ok: boolean }>;
+      // Session
       sessionStart: (body: SessionStartBody) => Promise<SessionStartResult>;
       sessionStop: (body: { session_id: string }) => Promise<SessionStopResult>;
       sessionStats: (sessionId: string) => Promise<SessionStats>;
@@ -135,6 +141,56 @@ export interface TwitchConfig {
   channel: string;
   username: string;
   oauthToken: string;
+}
+
+// ─── User / Membership ────────────────────────────────────────────────────────
+
+export interface MembershipTier {
+  name: 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+  color: string;
+  threshold: number;
+}
+
+export interface UserStats {
+  session_count: number;
+  total_frames: number;
+  total_duration_ms: number;
+  total_clips: number;
+  estimated_value_usd: number;
+  challenges_completed: number;
+  dominant_emotion: string | null;
+  emotion_distribution: Record<string, number>;
+}
+
+export interface UserAccountSettings {
+  default_game: string;
+  enable_webcam: boolean;
+  preferred_tier: string;
+  twitch_channel: string | null;
+  twitch_username: string | null;
+  obs_address: string;
+}
+
+export interface UserFullProfile {
+  user_id: string;
+  username: string;
+  created_at: number;
+  level: number;
+  xp: number;
+  xp_to_next: number;
+  membership: MembershipTier;
+  stats: UserStats;
+  settings: UserAccountSettings;
+}
+
+export interface UserSettingsUpdate {
+  user_id: string;
+  default_game?: string;
+  enable_webcam?: boolean;
+  preferred_tier?: string;
+  twitch_channel?: string;
+  twitch_username?: string;
+  obs_address?: string;
 }
 
 export const api = window.api;

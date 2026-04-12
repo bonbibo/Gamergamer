@@ -77,6 +77,22 @@ class User(GamificationBase):
     xp_entries = relationship("XPLedger", back_populates="user", cascade="all, delete-orphan")
     level = relationship("Level", back_populates="user", uselist=False, cascade="all, delete-orphan")
     challenges = relationship("UserChallenge", back_populates="user", cascade="all, delete-orphan")
+    settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+
+class UserSettings(GamificationBase):
+    __tablename__ = "user_settings"
+
+    user_id = Column(Text, ForeignKey("users.id"), primary_key=True)
+    default_game = Column(Text, default="valorant")
+    enable_webcam = Column(Boolean, default=False)
+    preferred_tier = Column(Text, default="basic")      # "basic" | "premium" | "elite"
+    twitch_channel = Column(Text)
+    twitch_username = Column(Text)
+    obs_address = Column(Text, default="ws://localhost:4455")
+    updated_at = Column(Integer)
+
+    user = relationship("User", back_populates="settings")
 
 
 class XPLedger(GamificationBase):
