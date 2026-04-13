@@ -98,7 +98,7 @@ export function Dashboard() {
               <Stat label="Duration" value={formatElapsed(elapsed)} />
               <Stat label="Frames Captured" value={frameCount.toLocaleString()} />
               <Stat label="~Storage Used" value={`${(frameCount * 0.04).toFixed(1)} MB`} />
-              <Stat label="Session ID" value={sessionId?.slice(0, 8) + '...' ?? '—'} />
+              <Stat label="Session ID" value={sessionId ? sessionId.slice(0, 8) + '...' : '—'} />
             </div>
           ) : (
             <p style={{ color: '#6b7280' }}>Start a session to see live stats.</p>
