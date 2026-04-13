@@ -32,7 +32,7 @@ export function Gamification() {
       {profile && (
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>Your Progress</h2>
-          <XPProgressBar level={profile.level} xp={profile.xp} xpToNext={profile.xp_to_next} />
+          <XPProgressBar level={profile.level} xp={profile.xp} xpToNext={profile.xp_to_next} xpFloor={profile.xp_floor} />
         </div>
       )}
 

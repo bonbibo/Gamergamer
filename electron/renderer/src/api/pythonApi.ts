@@ -14,6 +14,7 @@ declare global {
       sessionStop: (body: { session_id: string }) => Promise<SessionStopResult>;
       sessionStats: (sessionId: string) => Promise<SessionStats>;
       sessionEvent: (body: SessionEventBody) => Promise<{ ok: boolean }>;
+      sessionList: (userId: string) => Promise<SessionListItem[]>;
       getProfile: (userId: string) => Promise<GamificationProfile>;
       getChallenges: (userId: string) => Promise<Challenge[]>;
       trainingStart: (body: TrainingStartBody) => Promise<{ job_id: string }>;
@@ -54,6 +55,15 @@ export interface SessionStopResult {
   duration_ms: number;
 }
 
+export interface SessionListItem {
+  id: string;
+  game: string;
+  status: string;
+  frame_count: number;
+  duration_ms: number | null;
+  started_at: number;
+}
+
 export interface SessionStats {
   session_id: string;
   game: string;
@@ -74,6 +84,7 @@ export interface GamificationProfile {
   level: number;
   xp: number;
   xp_to_next: number;
+  xp_floor: number;
 }
 
 export interface Challenge {
@@ -178,6 +189,7 @@ export interface UserFullProfile {
   level: number;
   xp: number;
   xp_to_next: number;
+  xp_floor: number;
   membership: MembershipTier;
   stats: UserStats;
   settings: UserAccountSettings;

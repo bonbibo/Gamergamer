@@ -142,11 +142,18 @@ def get_profile(user_id: str) -> dict:
     try:
         level_row = db.query(Level).filter_by(user_id=user_id).first()
         if not level_row:
-            return {"level": 1, "xp": 0, "xp_to_next": xp_for_level(2)}
+            return {
+                "level": 1,
+                "xp": 0,
+                "xp_to_next": xp_for_level(2),
+                "xp_floor": 0,
+            }
+        lvl = level_row.current_level
         return {
-            "level": level_row.current_level,
+            "level": lvl,
             "xp": level_row.total_xp,
             "xp_to_next": xp_to_next_level(level_row.total_xp),
+            "xp_floor": xp_for_level(lvl),
         }
     finally:
         db.close()

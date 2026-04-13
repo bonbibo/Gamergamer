@@ -4,11 +4,15 @@ interface Props {
   level: number;
   xp: number;
   xpToNext: number;
+  xpFloor?: number;
 }
 
-export function XPProgressBar({ level, xp, xpToNext }: Props) {
-  const total = xp + xpToNext;
-  const pct = total > 0 ? Math.min(100, (xp / total) * 100) : 0;
+export function XPProgressBar({ level, xp, xpToNext, xpFloor = 0 }: Props) {
+  // Progress within the current level: from xpFloor (level start) to xpFloor+xpInLevel+xpToNext (level end)
+  const levelEnd = xp + xpToNext;
+  const range = levelEnd - xpFloor;
+  const gained = xp - xpFloor;
+  const pct = range > 0 ? Math.min(100, Math.max(0, (gained / range) * 100)) : 0;
 
   return (
     <div style={styles.container}>

@@ -46,6 +46,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('session:stop', (_e, body) => apiPost('/session/stop', body));
   ipcMain.handle('session:stats', (_e, sessionId) => apiGet(`/session/${sessionId}/stats`));
   ipcMain.handle('session:event', (_e, body) => apiPost('/session/event', body));
+  ipcMain.handle('session:list', (_e, userId) => apiGet(`/session/list?user_id=${userId}`));
 
   // ── User / Membership ─────────────────────────────────────────────────────
   ipcMain.handle('user:register', (_e, body) => apiPost('/user/register', body));

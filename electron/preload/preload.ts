@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   sessionStop: (body: unknown) => ipcRenderer.invoke('session:stop', body),
   sessionStats: (sessionId: string) => ipcRenderer.invoke('session:stats', sessionId),
   sessionEvent: (body: unknown) => ipcRenderer.invoke('session:event', body),
+  sessionList: (userId: string) => ipcRenderer.invoke('session:list', userId),
 
   // User / Membership
   userRegister: (body: unknown) => ipcRenderer.invoke('user:register', body),

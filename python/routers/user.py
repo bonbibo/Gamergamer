@@ -140,6 +140,7 @@ async def get_profile(user_id: str):
             "level": level_row.current_level if level_row else 1,
             "xp": level_row.total_xp if level_row else 0,
             "xp_to_next": xp_for_level((level_row.current_level if level_row else 1) + 1) - (level_row.total_xp if level_row else 0),
+            "xp_floor": xp_for_level(level_row.current_level if level_row else 1),
             "membership": membership,
             "stats": {
                 "session_count": session_count,

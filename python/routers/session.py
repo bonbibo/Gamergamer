@@ -32,6 +32,32 @@ class LogEventRequest(BaseModel):
     ammo: Optional[int] = None
 
 
+@router.get("/list")
+async def list_sessions(user_id: str):
+    """List all sessions for a user, newest first."""
+    db = SessionsDB()
+    try:
+        sessions = (
+            db.query(Session)
+            .filter_by(user_id=user_id)
+            .order_by(Session.started_at.desc())
+            .all()
+        )
+        return [
+            {
+                "id": s.id,
+                "game": s.game,
+                "status": s.status,
+                "frame_count": s.frame_count or 0,
+                "duration_ms": s.duration_ms,
+                "started_at": s.started_at,
+            }
+            for s in sessions
+        ]
+    finally:
+        db.close()
+
+
 @router.post("/start")
 async def start_session(body: StartSessionRequest):
     xp_engine.ensure_user(body.user_id, body.username)

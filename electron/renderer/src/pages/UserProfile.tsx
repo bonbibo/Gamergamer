@@ -218,7 +218,7 @@ export function UserProfile() {
         {/* ── XP + Membership Tier Progress ────────── */}
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>Seviye & XP</h3>
-          <XPProgressBar level={profile.level} xp={profile.xp} xpToNext={profile.xp_to_next} />
+          <XPProgressBar level={profile.level} xp={profile.xp} xpToNext={profile.xp_to_next} xpFloor={profile.xp_floor} />
 
           <div style={{ marginTop: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>

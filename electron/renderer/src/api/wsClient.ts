@@ -11,8 +11,10 @@ class WsClient {
   private ws: WebSocket | null = null;
   private handlers: WsMessageHandler[] = [];
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private _intentionalClose = false;
 
   connect(): void {
+    this._intentionalClose = false;
     if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
     this.ws = new WebSocket(WS_URL);
 
@@ -26,7 +28,9 @@ class WsClient {
     };
 
     this.ws.onclose = () => {
-      this.reconnectTimer = setTimeout(() => this.connect(), 2000);
+      if (!this._intentionalClose) {
+        this.reconnectTimer = setTimeout(() => this.connect(), 2000);
+      }
     };
 
     this.ws.onerror = () => {
@@ -35,6 +39,7 @@ class WsClient {
   }
 
   disconnect(): void {
+    this._intentionalClose = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

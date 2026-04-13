@@ -22,6 +22,14 @@ except ImportError:
     MSS_AVAILABLE = False
 
 
+def _safe_enqueue(queue: asyncio.Queue, item: object) -> None:
+    """Called inside the event loop via call_soon_threadsafe; drops frame on overflow."""
+    try:
+        queue.put_nowait(item)
+    except Exception:
+        pass  # Drop frame silently — consumer too slow
+
+
 class ScreenCapture:
     TARGET_FPS = 30
     JPEG_QUALITY = 75
@@ -67,13 +75,10 @@ class ScreenCapture:
                 img.save(buf, format="JPEG", quality=self.JPEG_QUALITY, optimize=False)
                 jpeg_bytes = buf.getvalue()
 
-                try:
-                    self._loop.call_soon_threadsafe(
-                        self._queue.put_nowait,
-                        (fid, timestamp_ms, img.size, jpeg_bytes),
-                    )
-                except asyncio.QueueFull:
-                    pass  # Drop frame if consumer is too slow
+                self._loop.call_soon_threadsafe(
+                    _safe_enqueue, self._queue,
+                    (fid, timestamp_ms, img.size, jpeg_bytes),
+                )
 
                 elapsed = time.perf_counter() - t0
                 sleep_for = interval - elapsed
