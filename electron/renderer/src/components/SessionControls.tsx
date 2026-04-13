@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api/pythonApi';
 import { useSessionStore } from '../store/sessionStore';
 import { wsClient } from '../api/wsClient';
@@ -10,9 +10,19 @@ export function SessionControls() {
   const [loading, setLoading] = useState(false);
   const [enableWebcam, setEnableWebcam] = useState(false);
 
+  // Load saved settings on mount
+  useEffect(() => {
+    api.userProfile(userId).then((profile) => {
+      if (profile.settings.default_game) setGame(profile.settings.default_game);
+      if (profile.settings.enable_webcam != null) setEnableWebcam(profile.settings.enable_webcam);
+    }).catch(() => {});
+  }, [userId]);
+
   async function handleStart() {
     setLoading(true);
     try {
+      // Persist current game + webcam preference before starting
+      api.userUpdateSettings({ user_id: userId, default_game: game, enable_webcam: enableWebcam }).catch(() => {});
       const result = await api.sessionStart({ user_id: userId, game, enable_webcam: enableWebcam });
       setSessionId(result.session_id);
       setRecording(true);

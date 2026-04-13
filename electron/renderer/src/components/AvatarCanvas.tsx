@@ -112,7 +112,8 @@ export function AvatarCanvas({ vrmUrl }: Props) {
       loader.register((parser: unknown) => new (VRMLoaderPlugin as new (parser: unknown) => unknown)(parser));
       loader.load(
         vrmUrl,
-        (gltf: { userData: { vrm: unknown } }) => {
+        (g: unknown) => {
+          const gltf = g as { userData: { vrm: unknown } };
           vrm = gltf.userData.vrm;
           scene.add(gltf as unknown as THREE.Object3D);
           cube.visible = false;

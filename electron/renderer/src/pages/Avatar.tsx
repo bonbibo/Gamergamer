@@ -3,13 +3,6 @@ import { AvatarCanvas } from '../components/AvatarCanvas';
 import { useStreamStore } from '../store/streamStore';
 import { api, TwitchChatMessage } from '../api/pythonApi';
 
-declare global {
-  interface Window {
-    api: Window['api'] & {
-      dialogOpenVrm: () => Promise<string | null>;
-    };
-  }
-}
 
 export function Avatar() {
   const { obsConnected, twitchConnected, isStreaming, setObsConnected, setTwitchConnected, setStreaming } = useStreamStore();
@@ -26,6 +19,8 @@ export function Avatar() {
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [chatMessages, setChatMessages] = useState<TwitchChatMessage[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [obsScenes, setObsScenes] = useState<string[]>([]);
+  const [obsCurrentScene, setObsCurrentScene] = useState<string | null>(null);
 
   async function pickVrm() {
     try {
@@ -65,9 +60,25 @@ export function Avatar() {
     try {
       await api.obsConnect({ address: obsAddress, password: obsPassword || undefined });
       setObsConnected(true);
+      // Load scene list after connect
+      const [scenes, current] = await Promise.all([
+        api.obsGetSceneList(),
+        api.obsGetCurrentScene(),
+      ]);
+      setObsScenes(scenes);
+      setObsCurrentScene(current);
     } catch (e: unknown) {
       alert(`OBS connect failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally { setLoading(null); }
+  }
+
+  async function handleSetScene(sceneName: string) {
+    try {
+      await api.obsSetScene(sceneName);
+      setObsCurrentScene(sceneName);
+    } catch (e: unknown) {
+      alert(`Sahne değiştirilemedi: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   async function connectTwitch() {
@@ -160,6 +171,30 @@ export function Avatar() {
             <button onClick={connectObs} disabled={!!loading || obsConnected} style={styles.btn}>
               {loading === 'obs' ? 'Connecting...' : obsConnected ? 'Connected' : 'Connect OBS'}
             </button>
+
+            {obsConnected && obsScenes.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 6 }}>
+                  Aktif Sahne
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {obsScenes.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleSetScene(s)}
+                      style={{
+                        padding: '4px 10px', fontSize: 12, borderRadius: 6, border: 'none',
+                        cursor: 'pointer', fontWeight: obsCurrentScene === s ? 700 : 400,
+                        background: obsCurrentScene === s ? '#7c3aed' : '#374151',
+                        color: obsCurrentScene === s ? '#fff' : '#9ca3af',
+                      }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={styles.card}>

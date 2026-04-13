@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import shutil
 import time
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from python.capture.session_writer import session_writer
-from python.db.database import SessionsDB
+from python.db.database import DATA_DIR, SessionsDB
 from python.db.models import Frame, Session
 from python.gamification import xp_engine, challenge_engine
 
@@ -117,6 +119,44 @@ async def get_session_stats(session_id: str):
         }
     finally:
         db.close()
+
+
+class DeleteSessionRequest(BaseModel):
+    session_id: str
+    user_id: str
+    delete_frames: bool = True
+
+
+@router.delete("/{session_id}")
+async def delete_session(session_id: str, user_id: str, delete_frames: bool = True):
+    """Delete a completed session's DB records and optionally its frame files."""
+    if session_writer.current_session_id == session_id:
+        raise HTTPException(status_code=400, detail="Cannot delete an active session")
+
+    db = SessionsDB()
+    freed_bytes = 0
+    try:
+        sess = db.query(Session).filter_by(id=session_id, user_id=user_id).first()
+        if not sess:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        if delete_frames:
+            frames_dir = Path(DATA_DIR) / "frames" / user_id / session_id
+            if frames_dir.exists():
+                freed_bytes = sum(f.stat().st_size for f in frames_dir.rglob("*") if f.is_file())
+                shutil.rmtree(frames_dir, ignore_errors=True)
+
+        # Cascade delete: frames and face_landmarks removed by ORM relationship
+        db.delete(sess)
+        db.commit()
+    finally:
+        db.close()
+
+    return {
+        "ok": True,
+        "session_id": session_id,
+        "freed_mb": round(freed_bytes / 1e6, 1),
+    }
 
 
 @router.post("/event")

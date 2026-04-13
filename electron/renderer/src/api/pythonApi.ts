@@ -15,6 +15,7 @@ declare global {
       sessionStats: (sessionId: string) => Promise<SessionStats>;
       sessionEvent: (body: SessionEventBody) => Promise<{ ok: boolean }>;
       sessionList: (userId: string) => Promise<SessionListItem[]>;
+      sessionDelete: (opts: { sessionId: string; userId: string }) => Promise<{ ok: boolean; freed_mb: number }>;
       getProfile: (userId: string) => Promise<GamificationProfile>;
       getChallenges: (userId: string) => Promise<Challenge[]>;
       trainingStart: (body: TrainingStartBody) => Promise<{ job_id: string }>;
@@ -28,6 +29,8 @@ declare global {
       obsStartRecord: () => Promise<void>;
       obsStopRecord: () => Promise<void>;
       obsSetScene: (name: string) => Promise<void>;
+      obsGetSceneList: () => Promise<string[]>;
+      obsGetCurrentScene: () => Promise<string | null>;
       obsIsConnected: () => Promise<boolean>;
       twitchConnect: (config: TwitchConfig) => Promise<void>;
       twitchDisconnect: () => Promise<void>;

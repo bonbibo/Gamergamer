@@ -32,6 +32,7 @@ export function SessionHistory() {
   const isRecording = useSessionStore((s) => s.isRecording);
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -53,6 +54,22 @@ export function SessionHistory() {
   useEffect(() => {
     if (!isRecording) load();
   }, [isRecording]);
+
+  async function handleDelete(s: SessionListItem) {
+    if (!confirm(`"${s.game?.replace(/_/g, ' ').toUpperCase() ?? 'UNKNOWN'}" oturumunu sil?\nFrame dosyaları da kaldırılacak.`)) return;
+    setDeleting(s.id);
+    try {
+      const result = await api.sessionDelete({ sessionId: s.id, userId });
+      setSessions((prev) => prev.filter((x) => x.id !== s.id));
+      if (result.freed_mb > 0) {
+        alert(`Silindi. ${result.freed_mb} MB alan serbest bırakıldı.`);
+      }
+    } catch (e: unknown) {
+      alert(`Silinemedi: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   if (loading && sessions.length === 0) {
     return <p style={{ color: '#6b7280', fontSize: 13 }}>Yükleniyor...</p>;
@@ -79,16 +96,28 @@ export function SessionHistory() {
                 {formatDate(s.started_at)}
               </div>
             </div>
-            <div style={styles.rowRight}>
-              <div style={{ color: '#9ca3af', fontSize: 12 }}>
-                {s.frame_count.toLocaleString()} frame • {formatDuration(s.duration_ms)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={styles.rowRight}>
+                <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                  {s.frame_count.toLocaleString()} frame • {formatDuration(s.duration_ms)}
+                </div>
+                <div style={{
+                  color: STATUS_COLOR[s.status] ?? '#9ca3af',
+                  fontSize: 11, fontWeight: 700, marginTop: 2,
+                }}>
+                  {s.status.toUpperCase()}
+                </div>
               </div>
-              <div style={{
-                color: STATUS_COLOR[s.status] ?? '#9ca3af',
-                fontSize: 11, fontWeight: 700, marginTop: 2,
-              }}>
-                {s.status.toUpperCase()}
-              </div>
+              {s.status !== 'recording' && (
+                <button
+                  onClick={() => handleDelete(s)}
+                  disabled={deleting === s.id}
+                  title="Oturumu sil"
+                  style={styles.deleteBtn}
+                >
+                  {deleting === s.id ? '...' : '✕'}
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -114,4 +143,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   rowLeft: {},
   rowRight: { textAlign: 'right' },
+  deleteBtn: {
+    background: 'transparent', color: '#4b5563', border: '1px solid #374151',
+    borderRadius: 5, width: 22, height: 22, fontSize: 11, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: 0, lineHeight: 1,
+  },
 };

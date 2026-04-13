@@ -40,6 +40,15 @@ async function apiPut(endpoint: string, body: unknown) {
   return res.json();
 }
 
+async function apiDelete(endpoint: string) {
+  const res = await fetch(`${API_BASE}${endpoint}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
 export function registerIpcHandlers(): void {
   // ── Health ────────────────────────────────────────────────────────────────
   ipcMain.handle('health', () => apiGet('/health'));
@@ -50,6 +59,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('session:stats', (_e, sessionId) => apiGet(`/session/${sessionId}/stats`));
   ipcMain.handle('session:event', (_e, body) => apiPost('/session/event', body));
   ipcMain.handle('session:list', (_e, userId) => apiGet(`/session/list?user_id=${userId}`));
+  ipcMain.handle('session:delete', (_e, { sessionId, userId }: { sessionId: string; userId: string }) =>
+    apiDelete(`/session/${sessionId}?user_id=${userId}`),
+  );
 
   // ── User / Membership ─────────────────────────────────────────────────────
   ipcMain.handle('user:register', (_e, body) => apiPost('/user/register', body));
@@ -84,6 +96,8 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('obs:startRecord', () => obsController.startRecording());
   ipcMain.handle('obs:stopRecord', () => obsController.stopRecording());
   ipcMain.handle('obs:setScene', (_e, sceneName) => obsController.setScene(sceneName));
+  ipcMain.handle('obs:getSceneList', () => obsController.getSceneList());
+  ipcMain.handle('obs:getCurrentScene', () => obsController.getCurrentScene());
   ipcMain.handle('obs:isConnected', () => obsController.isConnected());
 
   // ── Twitch ────────────────────────────────────────────────────────────────

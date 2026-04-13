@@ -48,7 +48,7 @@ export function Dashboard() {
   useEffect(() => {
     const unsub = wsClient.onMessage((msg: WsMessage) => {
       if (msg.type === 'frame') {
-        const frame = msg as {
+        const frame = msg as unknown as {
           frame_id: number;
           keyboard_state: { pressed: string[] };
           mouse_state: { x: number; y: number };
@@ -64,14 +64,14 @@ export function Dashboard() {
           mouse_y: frame.mouse_state.y,
         });
       } else if (msg.type === 'xp_awarded') {
-        const e = msg as { reason: string; amount: number; new_total: number; level: number };
+        const e = msg as unknown as { reason: string; amount: number; new_total: number; level: number };
         applyXpEvent(e.new_total, e.level);
         addNotification(`+${e.amount} XP — ${e.reason.replace(/_/g, ' ')}`);
       } else if (msg.type === 'level_up') {
-        const e = msg as { new_level: number };
+        const e = msg as unknown as { new_level: number };
         addNotification(`LEVEL UP! Level ${e.new_level} 🎉`);
       } else if (msg.type === 'challenge_complete') {
-        const e = msg as { name: string; xp_bonus: number };
+        const e = msg as unknown as { name: string; xp_bonus: number };
         addNotification(`Challenge: ${e.name} +${e.xp_bonus} XP 🏆`);
       }
     });

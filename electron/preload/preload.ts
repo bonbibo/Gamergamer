@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('api', {
   sessionStats: (sessionId: string) => ipcRenderer.invoke('session:stats', sessionId),
   sessionEvent: (body: unknown) => ipcRenderer.invoke('session:event', body),
   sessionList: (userId: string) => ipcRenderer.invoke('session:list', userId),
+  sessionDelete: (opts: { sessionId: string; userId: string }) =>
+    ipcRenderer.invoke('session:delete', opts),
 
   // User / Membership
   userRegister: (body: unknown) => ipcRenderer.invoke('user:register', body),
@@ -40,6 +42,8 @@ contextBridge.exposeInMainWorld('api', {
   obsStartRecord: () => ipcRenderer.invoke('obs:startRecord'),
   obsStopRecord: () => ipcRenderer.invoke('obs:stopRecord'),
   obsSetScene: (name: string) => ipcRenderer.invoke('obs:setScene', name),
+  obsGetSceneList: () => ipcRenderer.invoke('obs:getSceneList'),
+  obsGetCurrentScene: () => ipcRenderer.invoke('obs:getCurrentScene'),
   obsIsConnected: () => ipcRenderer.invoke('obs:isConnected'),
 
   // Twitch

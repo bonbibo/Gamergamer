@@ -3,6 +3,18 @@ import OBSWebSocket from 'obs-websocket-js';
 const obs = new OBSWebSocket();
 let connected = false;
 
+export async function getSceneList(): Promise<string[]> {
+  if (!connected) return [];
+  const { scenes } = await obs.call('GetSceneList') as unknown as { scenes: Array<{ sceneName: string }> };
+  return scenes.map((s) => s.sceneName);
+}
+
+export async function getCurrentScene(): Promise<string | null> {
+  if (!connected) return null;
+  const { currentProgramSceneName } = await obs.call('GetCurrentProgramScene') as { currentProgramSceneName: string };
+  return currentProgramSceneName;
+}
+
 export async function connectOBS(address: string, password?: string): Promise<void> {
   await obs.connect(address, password);
   connected = true;

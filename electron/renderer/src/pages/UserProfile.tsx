@@ -137,7 +137,12 @@ export function UserProfile() {
   async function handleSaveSettings() {
     setSaving(true);
     try {
-      await api.userUpdateSettings({ user_id: userId, ...settings });
+      await api.userUpdateSettings({
+        user_id: userId,
+        ...settings,
+        twitch_channel: settings.twitch_channel ?? undefined,
+        twitch_username: settings.twitch_username ?? undefined,
+      });
       flash('Ayarlar kaydedildi.');
       loadProfile();
     } catch { flash('Kayıt başarısız.', true); }
