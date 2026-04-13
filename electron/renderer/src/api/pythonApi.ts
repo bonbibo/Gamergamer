@@ -33,6 +33,10 @@ declare global {
       twitchDisconnect: () => Promise<void>;
       twitchIsConnected: () => Promise<boolean>;
       openPath: (filePath: string) => Promise<void>;
+      // TTS
+      ttsSpeak: (opts: { text: string; apiKey: string; voiceId: string }) => Promise<string>;
+      // File dialogs
+      dialogOpenVrm: () => Promise<string | null>;
     };
   }
 }

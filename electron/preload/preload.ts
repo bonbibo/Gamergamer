@@ -46,4 +46,11 @@ contextBridge.exposeInMainWorld('api', {
 
   // Shell
   openPath: (filePath: string) => ipcRenderer.invoke('shell:openPath', filePath),
+
+  // TTS
+  ttsSpeak: (opts: { text: string; apiKey: string; voiceId: string }) =>
+    ipcRenderer.invoke('tts:speak', opts),
+
+  // File dialogs
+  dialogOpenVrm: () => ipcRenderer.invoke('dialog:openVrm'),
 });

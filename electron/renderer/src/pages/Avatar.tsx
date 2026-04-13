@@ -3,6 +3,14 @@ import { AvatarCanvas } from '../components/AvatarCanvas';
 import { useStreamStore } from '../store/streamStore';
 import { api } from '../api/pythonApi';
 
+declare global {
+  interface Window {
+    api: Window['api'] & {
+      dialogOpenVrm: () => Promise<string | null>;
+    };
+  }
+}
+
 export function Avatar() {
   const { obsConnected, twitchConnected, isStreaming, setObsConnected, setTwitchConnected, setStreaming } = useStreamStore();
   const [obsAddress, setObsAddress] = useState('ws://localhost:4455');
@@ -11,6 +19,35 @@ export function Avatar() {
   const [twitchUsername, setTwitchUsername] = useState('');
   const [twitchToken, setTwitchToken] = useState('');
   const [loading, setLoading] = useState<string | null>(null);
+  const [vrmUrl, setVrmUrl] = useState<string | null>(null);
+  const [ttsApiKey, setTtsApiKey] = useState('');
+  const [ttsVoiceId, setTtsVoiceId] = useState('EXAVITQu4vr4xnSDxMaL');
+  const [ttsText, setTtsText] = useState('');
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+
+  async function pickVrm() {
+    try {
+      const filePath = await api.dialogOpenVrm();
+      if (filePath) setVrmUrl(`file://${filePath}`);
+    } catch (e: unknown) {
+      alert(`VRM yüklenemedi: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  async function handleTtsSpeak() {
+    if (!ttsText.trim() || !ttsApiKey) return alert('API key ve metin gerekli');
+    setTtsPlaying(true);
+    try {
+      const base64Audio = await api.ttsSpeak({ text: ttsText, apiKey: ttsApiKey, voiceId: ttsVoiceId });
+      const audio = new Audio(`data:audio/mpeg;base64,${base64Audio}`);
+      audio.onended = () => setTtsPlaying(false);
+      audio.onerror = () => setTtsPlaying(false);
+      await audio.play();
+    } catch (e: unknown) {
+      setTtsPlaying(false);
+      alert(`TTS hatası: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 
   async function connectObs() {
     setLoading('obs');
@@ -55,10 +92,20 @@ export function Avatar() {
         <div>
           <div style={styles.card}>
             <h2 style={styles.cardTitle}>Avatar Preview</h2>
-            <AvatarCanvas />
+            <AvatarCanvas vrmUrl={vrmUrl ?? undefined} />
+            <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button onClick={pickVrm} style={styles.btn}>
+                {vrmUrl ? 'VRM Değiştir' : 'VRM Yükle (.vrm)'}
+              </button>
+              {vrmUrl && (
+                <span style={{ color: '#22c55e', fontSize: 12 }}>
+                  {vrmUrl.split('/').pop()}
+                </span>
+              )}
+            </div>
             <p style={{ color: '#6b7280', fontSize: 12, marginTop: 8 }}>
-              Avatar reacts to your detected emotions in real-time.
-              Place this window as an OBS source using Window Capture.
+              Avatar duygu tespitine göre gerçek zamanlı tepki verir.
+              OBS'de Window Capture kaynağı olarak ekle.
             </p>
           </div>
         </div>
@@ -84,6 +131,33 @@ export function Avatar() {
             <Field label="OAuth Token" value={twitchToken} onChange={setTwitchToken} type="password" placeholder="oauth:..." />
             <button onClick={connectTwitch} disabled={!!loading || twitchConnected} style={styles.btn}>
               {loading === 'twitch' ? 'Connecting...' : twitchConnected ? 'Connected' : 'Connect Twitch'}
+            </button>
+          </div>
+
+          <div style={styles.card}>
+            <h2 style={styles.cardTitle}>AI Ses (ElevenLabs TTS)</h2>
+            <Field label="API Key" value={ttsApiKey} onChange={setTtsApiKey} type="password" placeholder="sk-..." />
+            <Field label="Voice ID" value={ttsVoiceId} onChange={setTtsVoiceId} placeholder="EXAVITQu4vr4xnSDxMaL" />
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Metin</label>
+              <textarea
+                value={ttsText}
+                onChange={(e) => setTtsText(e.target.value)}
+                placeholder="Söylenecek metin..."
+                rows={2}
+                style={{
+                  width: '100%', background: '#1e1e2a', color: '#e5e7eb',
+                  border: '1px solid #374151', borderRadius: 6, padding: '6px 10px',
+                  fontSize: 13, resize: 'none',
+                }}
+              />
+            </div>
+            <button
+              onClick={handleTtsSpeak}
+              disabled={ttsPlaying || !ttsApiKey || !ttsText.trim()}
+              style={styles.btn}
+            >
+              {ttsPlaying ? 'Oynatılıyor...' : 'Konuştur'}
             </button>
           </div>
 

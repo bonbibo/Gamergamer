@@ -9,6 +9,6 @@
     "dev": "npm run dev --workspace=electron",
     "build": "npm run build --workspace=electron",
     "python:install": "pip install -r python/requirements.txt",
-    "python:dev": "cd python && uvicorn main:app --host 0.0.0.0 --port 8765 --reload"
+    "python:dev": "uvicorn python.main:app --host 0.0.0.0 --port 8765 --reload"
   }
 }

@@ -22,6 +22,7 @@ from python.capture.screen_capture import ScreenCapture
 from python.capture.webcam_capture import WebcamCapture
 from python.db.database import DATA_DIR, SessionsDB
 from python.db.models import FaceLandmark, Frame, Session
+from python.gamification import challenge_engine, xp_engine
 from python.inference.emotion_detector import EmotionDetector
 from python.ws.broadcaster import broadcaster
 
@@ -195,6 +196,7 @@ class SessionWriter:
         # Single persistent DB session for the entire recording
         db = SessionsDB()
         frames_since_commit = 0
+        hype_xp_awarded = 0  # tracks emotion_hype XP this session (cap enforced)
 
         try:
             while self._running or not self._frame_queue.empty():
@@ -253,6 +255,22 @@ class SessionWriter:
                         ))
                         db.commit()
                     frames_since_commit = 0
+
+                # Emotion-based XP: award hype XP once per detected hype frame,
+                # up to EMOTION_HYPE_CAP_PER_SESSION XP total per session.
+                if (
+                    emotion
+                    and emotion.label == "hype"
+                    and hype_xp_awarded < xp_engine.EMOTION_HYPE_CAP_PER_SESSION
+                ):
+                    await asyncio.to_thread(
+                        xp_engine.award_xp, user_id, "emotion_hype", session_id
+                    )
+                    await asyncio.to_thread(
+                        challenge_engine.update_challenge_progress,
+                        user_id, "emotion_streak", 1,
+                    )
+                    hype_xp_awarded += xp_engine.XP_RULES["emotion_hype"]
 
                 # Push lightweight WebSocket event (no JPEG bytes)
                 await broadcaster.apublish({

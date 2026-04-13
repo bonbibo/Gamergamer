@@ -6,11 +6,8 @@ __pycache__/
 .env
 .env.local
 
-# Data (large, local-only)
-data/frames/
-data/sessions.db
-data/gamification.db
-data/models/
+# Data (large, local-only — entire data/ tree is runtime-only)
+data/
 
 # Python
 python/.venv/

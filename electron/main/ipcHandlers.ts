@@ -1,4 +1,4 @@
-import { ipcMain, shell } from 'electron';
+import { dialog, ipcMain, shell } from 'electron';
 import path from 'path';
 import * as obsController from './obsController';
 import * as twitchClient from './twitchClient';
@@ -90,4 +90,40 @@ export function registerIpcHandlers(): void {
 
   // ── Shell utils ───────────────────────────────────────────────────────────
   ipcMain.handle('shell:openPath', (_e, filePath) => shell.openPath(filePath));
+
+  // ── ElevenLabs TTS ────────────────────────────────────────────────────────
+  ipcMain.handle('tts:speak', async (_e, { text, apiKey, voiceId }: { text: string; apiKey: string; voiceId: string }) => {
+    if (!text.trim() || !apiKey) throw new Error('text and apiKey required');
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId ?? 'EXAVITQu4vr4xnSDxMaL'}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`ElevenLabs error ${res.status}: ${errText}`);
+    }
+    // Return audio as base64 so renderer can play it via Audio API
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.toString('base64');
+  });
+
+  // ── File dialogs ──────────────────────────────────────────────────────────
+  ipcMain.handle('dialog:openVrm', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'VRM Avatar Seç',
+      filters: [{ name: 'VRM Avatar', extensions: ['vrm'] }],
+      properties: ['openFile'],
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
 }
