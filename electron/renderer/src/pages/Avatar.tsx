@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AvatarCanvas } from '../components/AvatarCanvas';
 import { useStreamStore } from '../store/streamStore';
-import { api } from '../api/pythonApi';
+import { api, TwitchChatMessage } from '../api/pythonApi';
 
 declare global {
   interface Window {
@@ -24,6 +24,8 @@ export function Avatar() {
   const [ttsVoiceId, setTtsVoiceId] = useState('EXAVITQu4vr4xnSDxMaL');
   const [ttsText, setTtsText] = useState('');
   const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [chatMessages, setChatMessages] = useState<TwitchChatMessage[]>([]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   async function pickVrm() {
     try {
@@ -33,6 +35,15 @@ export function Avatar() {
       alert(`VRM yüklenemedi: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+
+  // Subscribe to Twitch chat messages pushed from main process
+  useEffect(() => {
+    const unsub = api.onTwitchChat((msg) => {
+      setChatMessages((prev) => [...prev.slice(-99), msg]);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    });
+    return unsub;
+  }, []);
 
   async function handleTtsSpeak() {
     if (!ttsText.trim() || !ttsApiKey) return alert('API key ve metin gerekli');
@@ -108,6 +119,35 @@ export function Avatar() {
               OBS'de Window Capture kaynağı olarak ekle.
             </p>
           </div>
+
+          {/* Twitch Chat Feed */}
+          {twitchConnected && (
+            <div style={styles.card}>
+              <h2 style={styles.cardTitle}>
+                Twitch Chat
+                <span style={{ color: '#6b7280', fontWeight: 400, fontSize: 12, marginLeft: 8 }}>
+                  {chatMessages.length} mesaj
+                </span>
+              </h2>
+              <div style={{
+                height: 200, overflowY: 'auto', display: 'flex',
+                flexDirection: 'column', gap: 6,
+              }}>
+                {chatMessages.length === 0
+                  ? <p style={{ color: '#4b5563', fontSize: 13 }}>Henüz mesaj yok...</p>
+                  : chatMessages.map((m, i) => (
+                    <div key={i} style={{ fontSize: 13 }}>
+                      <span style={{ color: m.color || '#9ca3af', fontWeight: 700 }}>
+                        {m.username}:
+                      </span>{' '}
+                      <span style={{ color: '#e5e7eb' }}>{m.message}</span>
+                    </div>
+                  ))
+                }
+                <div ref={chatEndRef} />
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

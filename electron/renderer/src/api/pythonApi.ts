@@ -32,6 +32,8 @@ declare global {
       twitchConnect: (config: TwitchConfig) => Promise<void>;
       twitchDisconnect: () => Promise<void>;
       twitchIsConnected: () => Promise<boolean>;
+      onTwitchChat: (handler: (msg: TwitchChatMessage) => void) => () => void;
+      health: () => Promise<HealthInfo>;
       openPath: (filePath: string) => Promise<void>;
       // TTS
       ttsSpeak: (opts: { text: string; apiKey: string; voiceId: string }) => Promise<string>;
@@ -57,6 +59,12 @@ export interface SessionStopResult {
   session_id: string;
   frames_captured: number;
   duration_ms: number;
+}
+
+export interface HealthInfo {
+  status: string;
+  version: string;
+  disk: { data_gb: number; free_gb: number; warn: boolean };
 }
 
 export interface SessionListItem {
@@ -156,6 +164,14 @@ export interface TwitchConfig {
   channel: string;
   username: string;
   oauthToken: string;
+}
+
+export interface TwitchChatMessage {
+  channel: string;
+  username: string;
+  message: string;
+  color: string;
+  timestamp: number;
 }
 
 // ─── User / Membership ────────────────────────────────────────────────────────

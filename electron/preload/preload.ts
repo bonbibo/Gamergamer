@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
+  // Health
+  health: () => ipcRenderer.invoke('health'),
+
   // Session
   sessionStart: (body: unknown) => ipcRenderer.invoke('session:start', body),
   sessionStop: (body: unknown) => ipcRenderer.invoke('session:stop', body),
@@ -43,6 +46,10 @@ contextBridge.exposeInMainWorld('api', {
   twitchConnect: (config: unknown) => ipcRenderer.invoke('twitch:connect', config),
   twitchDisconnect: () => ipcRenderer.invoke('twitch:disconnect'),
   twitchIsConnected: () => ipcRenderer.invoke('twitch:isConnected'),
+  onTwitchChat: (handler: (msg: unknown) => void) => {
+    ipcRenderer.on('twitch:chat', (_event, msg) => handler(msg));
+    return () => ipcRenderer.removeAllListeners('twitch:chat');
+  },
 
   // Shell
   openPath: (filePath: string) => ipcRenderer.invoke('shell:openPath', filePath),

@@ -1,4 +1,4 @@
-import { dialog, ipcMain, shell } from 'electron';
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'path';
 import * as obsController from './obsController';
 import * as twitchClient from './twitchClient';
@@ -41,6 +41,9 @@ async function apiPut(endpoint: string, body: unknown) {
 }
 
 export function registerIpcHandlers(): void {
+  // ── Health ────────────────────────────────────────────────────────────────
+  ipcMain.handle('health', () => apiGet('/health'));
+
   // ── Session ────────────────────────────────────────────────────────────────
   ipcMain.handle('session:start', (_e, body) => apiPost('/session/start', body));
   ipcMain.handle('session:stop', (_e, body) => apiPost('/session/stop', body));
@@ -84,7 +87,21 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('obs:isConnected', () => obsController.isConnected());
 
   // ── Twitch ────────────────────────────────────────────────────────────────
-  ipcMain.handle('twitch:connect', (_e, config) => twitchClient.connectTwitch(config));
+  ipcMain.handle('twitch:connect', async (_e, config) => {
+    await twitchClient.connectTwitch(config);
+    // Forward chat messages to the renderer as IPC push events
+    twitchClient.onChatMessage((channel, userstate, message, self) => {
+      if (self) return;
+      const win = BrowserWindow.getAllWindows()[0];
+      win?.webContents.send('twitch:chat', {
+        channel,
+        username: userstate['display-name'] || userstate.username || 'viewer',
+        message,
+        color: userstate.color ?? '#9ca3af',
+        timestamp: Date.now(),
+      });
+    });
+  });
   ipcMain.handle('twitch:disconnect', () => twitchClient.disconnectTwitch());
   ipcMain.handle('twitch:isConnected', () => twitchClient.isConnected());
 

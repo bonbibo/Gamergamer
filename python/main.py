@@ -54,7 +54,23 @@ app.include_router(marketplace.router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    import shutil
+    from python.db.database import DATA_DIR
+    try:
+        usage = shutil.disk_usage(DATA_DIR)
+        data_bytes = sum(
+            f.stat().st_size
+            for f in DATA_DIR.rglob("*")
+            if f.is_file()
+        )
+        disk_info = {
+            "data_gb": round(data_bytes / 1e9, 3),
+            "free_gb": round(usage.free / 1e9, 1),
+            "warn": data_bytes / 1e9 > 10,
+        }
+    except Exception:
+        disk_info = {"data_gb": 0, "free_gb": 0, "warn": False}
+    return {"status": "ok", "version": "0.1.0", "disk": disk_info}
 
 
 @app.websocket("/ws")

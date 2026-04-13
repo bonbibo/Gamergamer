@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { SessionControls } from '../components/SessionControls';
 import { EmotionBadge } from '../components/EmotionBadge';
+import { SessionHistory } from '../components/SessionHistory';
 import { useSessionStore } from '../store/sessionStore';
 import { wsClient, WsMessage } from '../api/wsClient';
 import { useGamificationStore } from '../store/gamificationStore';
-import { api } from '../api/pythonApi';
+import { api, HealthInfo } from '../api/pythonApi';
 
 export function Dashboard() {
   const { sessionId, isRecording, frameCount, currentEmotion, emotionConfidence, userId, startTime, setEmotion, setFrameCount } = useSessionStore();
@@ -12,12 +13,23 @@ export function Dashboard() {
   const [latestInput, setLatestInput] = useState<{ pressed: string[]; mouse_x: number; mouse_y: number } | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: number; text: string }>>([]);
   const [elapsed, setElapsed] = useState(0);
+  const [health, setHealth] = useState<HealthInfo | null>(null);
   const notifCounter = useRef(0);
 
   // Load gamification profile on mount
   useEffect(() => {
     api.getProfile(userId).then(setProfile).catch(() => {});
   }, [userId]);
+
+  // Poll health / disk info every 30s
+  useEffect(() => {
+    function checkHealth() {
+      api.health().then(setHealth).catch(() => {});
+    }
+    checkHealth();
+    const id = setInterval(checkHealth, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Elapsed timer — updates every second while recording
   useEffect(() => {
@@ -83,6 +95,21 @@ export function Dashboard() {
   return (
     <div style={styles.page}>
       <h1 style={styles.title}>Dashboard</h1>
+
+      {/* Disk warning banner */}
+      {health?.disk.warn && (
+        <div style={styles.diskWarn}>
+          ⚠️ Disk kullanımı yüksek: veri dizini {health.disk.data_gb.toFixed(1)} GB.
+          Eski oturum dosyalarını temizlemeyi düşün. ({health.disk.free_gb} GB boş)
+        </div>
+      )}
+      {health && !health.disk.warn && (
+        <div style={styles.diskInfo}>
+          Veri: {health.disk.data_gb.toFixed(2)} GB &nbsp;•&nbsp;
+          Boş alan: {health.disk.free_gb} GB
+        </div>
+      )}
+
       <div style={styles.grid}>
         {/* Left column */}
         <div style={styles.card}>
@@ -121,6 +148,12 @@ export function Dashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Session history */}
+      <div style={{ ...styles.card, marginTop: 20 }}>
+        <h2 style={styles.cardTitle}>Oturum Geçmişi</h2>
+        <SessionHistory />
       </div>
 
       {/* Toast notifications */}
@@ -165,6 +198,14 @@ const styles: Record<string, React.CSSProperties> = {
   subTitle: { color: '#9ca3af', fontSize: 13, fontWeight: 600, marginBottom: 8 },
   stats: { display: 'flex', flexDirection: 'column', gap: 4 },
   inputRow: { display: 'flex', flexWrap: 'wrap', gap: 4 },
+  diskWarn: {
+    background: '#78350f', border: '1px solid #b45309', borderRadius: 8,
+    padding: '8px 16px', fontSize: 13, color: '#fde68a',
+    marginBottom: 16,
+  },
+  diskInfo: {
+    color: '#4b5563', fontSize: 12, marginBottom: 12,
+  },
   notifications: {
     position: 'fixed', bottom: 24, right: 24,
     display: 'flex', flexDirection: 'column', gap: 8, zIndex: 100,
