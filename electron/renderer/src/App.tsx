@@ -23,7 +23,7 @@ export function App() {
   const [page, setPage] = useState<Page>('profile');
   const userId = useSessionStore((s) => s.userId);
   const [username, setUsername] = useState<string | null>(null);
-  const [isRecording] = [useSessionStore((s) => s.isRecording)];
+  const isRecording = useSessionStore((s) => s.isRecording);
 
   // Try to load the username for the sidebar display
   useEffect(() => {

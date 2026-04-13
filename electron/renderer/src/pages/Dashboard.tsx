@@ -7,47 +7,78 @@ import { useGamificationStore } from '../store/gamificationStore';
 import { api } from '../api/pythonApi';
 
 export function Dashboard() {
-  const { sessionId, isRecording, frameCount, currentEmotion, emotionConfidence, userId, setEmotion, setFrameCount } = useSessionStore();
+  const { sessionId, isRecording, frameCount, currentEmotion, emotionConfidence, userId, startTime, setEmotion, setFrameCount } = useSessionStore();
   const { profile, setProfile, applyXpEvent } = useGamificationStore();
   const [latestInput, setLatestInput] = useState<{ pressed: string[]; mouse_x: number; mouse_y: number } | null>(null);
-  const [notifications, setNotifications] = useState<string[]>([]);
+  const [notifications, setNotifications] = useState<Array<{ id: number; text: string }>>([]);
+  const [elapsed, setElapsed] = useState(0);
+  const notifCounter = useRef(0);
 
-  // Load profile on mount
+  // Load gamification profile on mount
   useEffect(() => {
     api.getProfile(userId).then(setProfile).catch(() => {});
   }, [userId]);
+
+  // Elapsed timer — updates every second while recording
+  useEffect(() => {
+    if (!isRecording || !startTime) {
+      setElapsed(0);
+      return;
+    }
+    setElapsed(Math.floor((Date.now() - startTime) / 1000));
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isRecording, startTime]);
 
   // WebSocket listener
   useEffect(() => {
     const unsub = wsClient.onMessage((msg: WsMessage) => {
       if (msg.type === 'frame') {
-        const frame = msg as { frame_id: number; keyboard_state: { pressed: string[] }; mouse_state: { x: number; y: number }; emotion?: { label: string; confidence: number } };
+        const frame = msg as {
+          frame_id: number;
+          keyboard_state: { pressed: string[] };
+          mouse_state: { x: number; y: number };
+          emotion?: { label: string; confidence: number };
+        };
         setFrameCount(frame.frame_id);
         if (frame.emotion?.label) {
           setEmotion(frame.emotion.label, frame.emotion.confidence);
         }
-        setLatestInput({ pressed: frame.keyboard_state.pressed, mouse_x: frame.mouse_state.x, mouse_y: frame.mouse_state.y });
+        setLatestInput({
+          pressed: frame.keyboard_state.pressed,
+          mouse_x: frame.mouse_state.x,
+          mouse_y: frame.mouse_state.y,
+        });
       } else if (msg.type === 'xp_awarded') {
         const e = msg as { reason: string; amount: number; new_total: number; level: number };
         applyXpEvent(e.new_total, e.level);
         addNotification(`+${e.amount} XP — ${e.reason.replace(/_/g, ' ')}`);
       } else if (msg.type === 'level_up') {
         const e = msg as { new_level: number };
-        addNotification(`LEVEL UP! Now Level ${e.new_level}`);
+        addNotification(`LEVEL UP! Level ${e.new_level} 🎉`);
       } else if (msg.type === 'challenge_complete') {
         const e = msg as { name: string; xp_bonus: number };
-        addNotification(`Challenge complete: ${e.name} +${e.xp_bonus} XP`);
+        addNotification(`Challenge: ${e.name} +${e.xp_bonus} XP 🏆`);
       }
     });
     return unsub;
   }, []);
 
   function addNotification(text: string) {
-    setNotifications((prev) => [...prev.slice(-4), text]);
-    setTimeout(() => setNotifications((prev) => prev.slice(1)), 4000);
+    const id = ++notifCounter.current;
+    setNotifications((prev) => [...prev.slice(-4), { id, text }]);
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    }, 4000);
   }
 
-  const elapsed = sessionId && isRecording ? Math.floor((Date.now() - (useSessionStore.getState().startTime ?? Date.now())) / 1000) : 0;
+  function formatElapsed(s: number) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  }
 
   return (
     <div style={styles.page}>
@@ -64,9 +95,10 @@ export function Dashboard() {
           <h2 style={styles.cardTitle}>Live Stats</h2>
           {isRecording ? (
             <div style={styles.stats}>
+              <Stat label="Duration" value={formatElapsed(elapsed)} />
               <Stat label="Frames Captured" value={frameCount.toLocaleString()} />
               <Stat label="~Storage Used" value={`${(frameCount * 0.04).toFixed(1)} MB`} />
-              <Stat label="Session" value={sessionId?.slice(0, 8) + '...' ?? '—'} />
+              <Stat label="Session ID" value={sessionId?.slice(0, 8) + '...' ?? '—'} />
             </div>
           ) : (
             <p style={{ color: '#6b7280' }}>Start a session to see live stats.</p>
@@ -91,10 +123,10 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Notifications */}
+      {/* Toast notifications */}
       <div style={styles.notifications}>
-        {notifications.map((n, i) => (
-          <div key={i} style={styles.notif}>{n}</div>
+        {notifications.map((n) => (
+          <div key={n.id} style={styles.notif}>{n.text}</div>
         ))}
       </div>
     </div>

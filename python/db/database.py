@@ -43,8 +43,9 @@ def get_gamification_db():
 
 
 def init_databases():
-    # Import here to avoid circular import at module load time
-    import importlib
-    importlib.import_module("python.db.models")
+    # Models must be imported so their table definitions register on the
+    # Base.metadata objects before create_all() is called.
+    # Using a direct import avoids the fragile importlib approach.
+    from python.db import models as _models  # noqa: F401  (side-effect import)
     SessionsBase.metadata.create_all(bind=sessions_engine)
     GamificationBase.metadata.create_all(bind=gamification_engine)
