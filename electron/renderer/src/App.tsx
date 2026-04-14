@@ -25,11 +25,21 @@ export function App() {
   const [username, setUsername] = useState<string | null>(null);
   const isRecording = useSessionStore((s) => s.isRecording);
 
-  // Try to load the username for the sidebar display
+  // Ensure user exists in DB then load their username for sidebar
   useEffect(() => {
+    if (!userId) return;
     api.userProfile(userId)
       .then((p) => setUsername(p.username))
-      .catch(() => setUsername(null));
+      .catch(async () => {
+        // User not registered yet — create with a default username
+        try {
+          await api.userRegister({ user_id: userId, username: 'Player' });
+          const p = await api.userProfile(userId);
+          setUsername(p.username);
+        } catch {
+          setUsername(null);
+        }
+      });
   }, [userId]);
 
   return (

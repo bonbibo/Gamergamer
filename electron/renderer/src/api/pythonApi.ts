@@ -4,6 +4,8 @@
 declare global {
   interface Window {
     api: {
+      // Stable user ID from main process
+      getUserId: () => Promise<string>;
       // User / Membership
       userRegister: (body: { user_id: string; username: string }) => Promise<{ ok: boolean }>;
       userProfile: (userId: string) => Promise<UserFullProfile>;

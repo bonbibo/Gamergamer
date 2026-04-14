@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
+  // Stable user ID (stored in userData dir by main process)
+  getUserId: () => ipcRenderer.invoke('userId:get'),
+
   // Health
   health: () => ipcRenderer.invoke('health'),
 

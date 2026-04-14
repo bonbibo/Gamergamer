@@ -1,5 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 import { startPythonService, stopPythonService } from './pythonBridge';
 import { registerIpcHandlers } from './ipcHandlers';
 
@@ -31,7 +33,25 @@ function createWindow(): void {
   });
 }
 
+function getOrCreateUserId(): string {
+  const userDataPath = app.getPath('userData');
+  const idFile = path.join(userDataPath, 'user_id.txt');
+  try {
+    if (fs.existsSync(idFile)) {
+      const stored = fs.readFileSync(idFile, 'utf-8').trim();
+      if (stored.length === 36) return stored;  // valid UUID
+    }
+  } catch { /* fall through */ }
+  const newId = crypto.randomUUID();
+  try { fs.writeFileSync(idFile, newId, 'utf-8'); } catch { /* ignore */ }
+  return newId;
+}
+
 app.whenReady().then(async () => {
+  // Register userId IPC before handlers so renderer can get stable ID on load
+  const storedUserId = getOrCreateUserId();
+  ipcMain.handle('userId:get', () => storedUserId);
+
   registerIpcHandlers();
 
   try {

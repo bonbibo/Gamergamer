@@ -4,32 +4,36 @@ import { app } from 'electron';
 
 const PYTHON_PORT = 8765;
 const HEALTH_URL = `http://localhost:${PYTHON_PORT}/health`;
-const MAX_RETRIES = 15;
+const MAX_RETRIES = 20;
 const RETRY_INTERVAL_MS = 1000;
 
 let pythonProcess: ChildProcess | null = null;
 
-function getPythonCommand(): { cmd: string; args: string[] } {
+function getPythonCommand(): { cmd: string; args: string[]; cwd: string } {
   const isProd = app.isPackaged;
   if (isProd) {
     const execPath = path.join(process.resourcesPath, 'python-service', 'gamergamer-service');
-    return { cmd: execPath, args: [] };
+    return { cmd: execPath, args: [], cwd: process.resourcesPath };
   }
-  // Development: run via python/uvicorn
+  // Development: run via uvicorn from project root
   const projectRoot = path.join(__dirname, '..', '..', '..');
   return {
     cmd: process.platform === 'win32' ? 'python' : 'python3',
-    args: ['-m', 'python.main'],
+    args: ['-m', 'uvicorn', 'python.main:app', '--host', '0.0.0.0', '--port', String(PYTHON_PORT)],
+    cwd: projectRoot,
   };
 }
 
 export async function startPythonService(): Promise<void> {
-  const { cmd, args } = getPythonCommand();
+  const { cmd, args, cwd } = getPythonCommand();
+
+  // Data directory: use app userData so it survives updates and isn't inside bundle
+  const dataDir = path.join(app.getPath('userData'), 'data');
 
   pythonProcess = spawn(cmd, args, {
-    cwd: path.join(__dirname, '..', '..', '..'),
+    cwd,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env },
+    env: { ...process.env, GAMERGAMER_DATA_DIR: dataDir },
   });
 
   pythonProcess.stdout?.on('data', (data: Buffer) => {

@@ -37,13 +37,17 @@ pyinstaller \
   --hidden-import sqlalchemy.dialects.sqlite \
   --hidden-import pynput.keyboard._xorg \
   --hidden-import pynput.mouse._xorg \
+  --hidden-import pynput.keyboard._win32 \
+  --hidden-import pynput.mouse._win32 \
+  --hidden-import pynput.keyboard._darwin \
+  --hidden-import pynput.mouse._darwin \
   --hidden-import deepface \
   --hidden-import mediapipe \
   --collect-all deepface \
   --collect-all mediapipe \
   --collect-all timm \
   --noconfirm \
-  python/main.py
+  run.py
 
 echo ""
 echo "==> Build complete: python-dist/gamergamer-service/"
